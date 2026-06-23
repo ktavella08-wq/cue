@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Cue — Live Event Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#142850;--teal:#006D66;--teal3:#e6f4f3;--teal-glow:rgba(0,109,102,.2);
+  --live:#ef4444;--live2:#fee2e2;--next:#f59e0b;--next2:#fef3c7;
+  --done:#9ca3af;--done2:#f3f4f6;
+  --bg:#fff;--bg2:#f9fafb;--bg3:#f3f4f6;
+  --border:#e5e7eb;--border2:#d1d5db;
+  --text:#111827;--text2:#374151;--text3:#6b7280;--text4:#9ca3af;
+  --r:8px;--r-sm:6px;--font:'Inter',-apple-system,sans-serif;
+}
+[data-theme="dark"]{
+  --bg:#0f1117;--bg2:#161b27;--bg3:#1e2535;
+  --border:#1f2937;--border2:#374151;
+  --text:#f9fafb;--text2:#e5e7eb;--text3:#9ca3af;--text4:#6b7280;
+  --teal3:#0a1f1e;--done2:#1f2937;
+}
+html{font-size:14px;-webkit-font-smoothing:antialiased}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh}
+button{font-family:var(--font);cursor:pointer}
+input,select{font-family:var(--font)}
+
+/* TOPBAR */
+.topbar{height:56px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:0;padding:0 24px;position:sticky;top:0;z-index:200}
+.logo{display:flex;align-items:center;gap:9px;margin-right:20px}
+.logo-text{font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.02em}
+.logo-text span{color:var(--teal)}
+.topbar-event{font-size:13px;font-weight:500;color:var(--text3);padding:4px 10px;border-radius:var(--r-sm);border:1px solid transparent;cursor:pointer;max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar-event:hover{border-color:var(--border);color:var(--text)}
+.topbar-right{display:flex;align-items:center;gap:8px;margin-left:auto}
+.countdown-chip{display:flex;align-items:center;gap:7px;background:var(--navy);color:#fff;padding:6px 14px;border-radius:var(--r-sm);font-size:12px;font-weight:500;min-width:130px;justify-content:center}
+.countdown-chip.urgent{background:var(--live);animation:pulse 1s ease-in-out infinite}
+.countdown-chip.soon{background:var(--next);color:var(--text)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.75}}
+.cdot{width:7px;height:7px;border-radius:50%;background:#34d399;flex-shrink:0}
+.cdot.live{background:var(--live);animation:pdot 1.2s infinite}
+@keyframes pdot{0%,100%{opacity:1}50%{opacity:.4}}
+.btn-icon{background:none;border:1px solid var(--border);color:var(--text3);padding:6px 8px;border-radius:var(--r-sm);font-size:14px;display:flex;align-items:center;transition:all .15s}
+.btn-icon:hover{border-color:var(--border2);color:var(--text);background:var(--bg2)}
+.btn-sm{background:none;border:1px solid var(--border);color:var(--text2);font-size:12px;font-weight:500;padding:6px 12px;border-radius:var(--r-sm);display:flex;align-items:center;gap:5px;transition:all .15s}
+.btn-sm:hover{border-color:var(--border2);background:var(--bg2)}
+.btn-teal{background:var(--teal);color:#fff;border:none;font-size:12px;font-weight:600;padding:7px 14px;border-radius:var(--r-sm);display:flex;align-items:center;gap:5px;transition:opacity .15s}
+.btn-teal:hover{opacity:.88}
+
+/* UPLOAD PAGE */
+#uploadPage{display:flex;flex-direction:row;min-height:calc(100vh - 56px)}
+/* Sidebar */
+.up-sidebar{width:280px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.up-sidebar-header{padding:20px 20px 12px;border-bottom:1px solid var(--border)}
+.up-sidebar-title{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text4);margin-bottom:12px}
+.up-sidebar-new{width:100%;background:var(--teal);color:#fff;border:none;font-size:12px;font-weight:600;padding:8px 14px;border-radius:var(--r-sm);cursor:pointer;display:flex;align-items:center;gap:6px;justify-content:center;transition:opacity .15s}
+.up-sidebar-new:hover{opacity:.88}
+.up-projects{flex:1;overflow-y:auto;padding:8px}
+.up-project-item{padding:10px 12px;border-radius:var(--r-sm);cursor:pointer;transition:background .15s;border:1px solid transparent;margin-bottom:4px;display:flex;align-items:center;gap:10px}
+.up-project-item:hover{background:var(--bg3);border-color:var(--border)}
+.up-project-item.active{background:var(--teal3);border-color:var(--teal)}
+.up-project-icon{width:32px;height:32px;background:var(--navy);border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.up-project-icon i{font-size:14px;color:#6b9ed8}
+.up-project-info{flex:1;min-width:0}
+.up-project-name{font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+.up-project-meta{font-size:11px;color:var(--text4)}
+.up-project-del{background:none;border:none;color:var(--text4);font-size:13px;cursor:pointer;padding:3px;border-radius:var(--r-sm);opacity:0;transition:all .15s;flex-shrink:0}
+.up-project-item:hover .up-project-del{opacity:1}
+.up-project-del:hover{color:var(--live);background:var(--live2)}
+.up-empty{padding:24px 16px;text-align:center;color:var(--text4);font-size:12px;line-height:1.8}
+.up-empty i{font-size:24px;display:block;margin-bottom:8px;color:var(--text4)}
+/* Main area */
+.up-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 40px}
+.upload-hero{text-align:center;max-width:460px;margin-bottom:36px}
+.upload-hero h1{font-size:28px;font-weight:700;letter-spacing:-.03em;margin-bottom:10px}
+.upload-hero h1 em{font-style:normal;color:var(--teal)}
+.upload-hero p{font-size:13px;color:var(--text3);line-height:1.7}
+.drop-card{width:100%;max-width:420px;background:var(--bg);border:2px dashed var(--border2);border-radius:12px;padding:40px 32px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s,box-shadow .2s}
+.drop-card:hover,.drop-card.over{border-color:var(--teal);background:var(--teal3);box-shadow:0 0 0 4px var(--teal-glow)}
+.drop-icon{width:48px;height:48px;background:var(--teal3);border-radius:10px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+.drop-icon i{font-size:22px;color:var(--teal)}
+.drop-card h3{font-size:15px;font-weight:600;margin-bottom:6px}
+.drop-card p{font-size:13px;color:var(--text3);margin-bottom:14px;line-height:1.6}
+.drop-card .fmt{font-size:11px;color:var(--text4);background:var(--bg3);padding:3px 12px;border-radius:20px;display:inline-block}
+.or-row{display:flex;align-items:center;gap:12px;width:100%;max-width:420px;margin:16px 0}
+.or-line{flex:1;height:1px;background:var(--border)}
+.or-txt{font-size:12px;color:var(--text4)}
+.btn-blank{background:var(--bg);border:1px solid var(--border);color:var(--text2);font-size:13px;font-weight:500;padding:9px 18px;border-radius:var(--r);display:flex;align-items:center;gap:7px;transition:all .15s}
+.btn-blank:hover{border-color:var(--border2);background:var(--bg2)}
+
+/* EDITOR PAGE */
+#editorPage{display:none}
+
+/* KPI BAR */
+.kpi-bar{display:flex;gap:16px;padding:20px 24px;background:var(--bg);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.kpi-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;min-width:130px;flex:1;max-width:220px}
+.kpi-label{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.07em;color:var(--text4);margin-bottom:8px}
+.kpi-value{font-size:22px;font-weight:700;letter-spacing:-.02em;line-height:1;color:var(--text)}
+.kpi-sub{font-size:11px;color:var(--text3);margin-top:4px}
+.kpi-live{border-color:var(--teal);background:var(--teal3)}
+.kpi-live .kpi-value{color:var(--teal);font-size:14px;line-height:1.4}
+
+/* INFO BAR */
+.info-bar{background:var(--bg2);border-bottom:1px solid var(--border);padding:8px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.share-box{display:flex;align-items:center;gap:7px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 10px;flex:1;min-width:0;max-width:400px}
+.share-txt{flex:1;font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.copy-btn{background:none;border:none;color:var(--text4);font-size:13px;cursor:pointer;transition:color .15s;padding:0;display:flex}
+.copy-btn:hover{color:var(--teal)}
+.flash{font-size:11px;color:var(--teal);opacity:0;transition:opacity .3s}
+.flash.on{opacity:1}
+.sync-pill{font-size:11px;font-weight:500;padding:3px 9px;border-radius:20px;background:var(--teal3);color:var(--teal)}
+.sync-pill.saving{background:var(--next2);color:var(--next)}
+.who-inp{font-size:12px;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 9px;background:var(--bg);color:var(--text);outline:none;width:130px}
+.who-inp:focus{border-color:var(--teal)}
+.pdots{display:flex;gap:3px;align-items:center}
+.pdot{width:7px;height:7px;border-radius:50%}
+
+/* TABLE */
+.ros-wrap{padding:0 24px 80px;overflow-x:auto;overflow-y:auto;max-height:calc(100vh - 210px)}
+table.ros{width:100%;border-collapse:separate;border-spacing:0;min-width:900px}
+table.ros thead th{
+  background:var(--bg2);color:var(--text4);font-size:11px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.07em;
+  padding:0 12px;height:36px;text-align:left;
+  border-bottom:1px solid var(--border);
+  border-top:1px solid var(--border);
+  position:sticky;top:0;z-index:50;white-space:nowrap;
+}
+table.ros tr.sec-row td{background:var(--navy);border-bottom:1px solid rgba(255,255,255,.06);padding:0}
+table.ros tr.sec-row{scroll-margin-top:100px}
+.sec-inp{width:100%;border:none;background:transparent;outline:none;color:rgba(255,255,255,.9);font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:10px 16px;display:block}
+.sec-inp::placeholder{color:rgba(255,255,255,.3)}
+.sec-del{background:none;border:none;color:rgba(255,255,255,.25);font-size:13px;padding:4px 8px;cursor:pointer;display:block;margin:auto;transition:color .15s}
+.sec-del:hover{color:var(--live)}
+table.ros tr.data-row{background:var(--bg);transition:background .1s}
+table.ros tr.data-row:nth-child(even){background:#fafafa}
+[data-theme="dark"] table.ros tr.data-row:nth-child(even){background:#161b27}
+table.ros tr.data-row:hover{background:var(--bg2)}
+table.ros tr.data-row.is-live{background:rgba(0,109,102,.05);box-shadow:inset 3px 0 0 var(--teal)}
+table.ros tr.data-row.is-next{background:rgba(245,158,11,.04);box-shadow:inset 3px 0 0 var(--next)}
+table.ros tr.data-row.is-done{opacity:.5}
+table.ros tr.data-row.drag-over td{box-shadow:0 -2px 0 var(--teal) inset}
+table.ros td{border-bottom:1px solid var(--border);padding:0;vertical-align:middle;height:48px}
+td.grip-td{padding:0 6px;cursor:grab;color:var(--text4);text-align:center;font-size:12px;width:22px}
+td.grip-td:hover{color:var(--text3)}
+td.status-td{padding:0 8px;width:82px}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:20px;cursor:pointer;border:none;transition:all .15s;white-space:nowrap}
+.chip-none{background:var(--bg3);color:var(--text4)}
+.chip-none:hover{background:var(--border);color:var(--text3)}
+.chip-live{background:var(--live2);color:var(--live);animation:chip-glow 2s infinite}
+@keyframes chip-glow{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0)}50%{box-shadow:0 0 0 3px rgba(239,68,68,.15)}}
+.chip-next{background:var(--next2);color:var(--next)}
+.chip-done{background:var(--done2);color:var(--done)}
+.chip-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+.ci{font-family:var(--font);font-size:13px;width:100%;border:none;background:transparent;outline:none;color:var(--text);padding:0 12px;height:48px;display:block;transition:background .1s}
+.ci:focus{background:rgba(0,109,102,.06);box-shadow:inset 0 0 0 1.5px var(--teal)}
+.ci::placeholder{color:var(--text4)}
+.ci-cue{text-align:center;font-size:12px;font-weight:600;color:var(--text3);width:52px}
+.ci-time{text-align:center;font-size:13px;font-weight:600;color:var(--navy);width:80px}
+[data-theme="dark"] .ci-time{color:#93c5fd}
+.ci-dur{text-align:center;font-size:12px;color:var(--text3);width:100px}
+.ci-what{font-weight:500}
+td.del-td{text-align:center;padding:0 4px;width:32px}
+.del-btn{background:none;border:none;color:var(--text4);font-size:13px;padding:4px;border-radius:var(--r-sm);cursor:pointer;display:block;margin:auto;transition:all .15s}
+.del-btn:hover{color:var(--live);background:var(--live2)}
+.add-bar{display:flex;gap:0;padding:8px 0;margin-top:4px;border-top:1px dashed var(--border)}
+.add-btn{background:none;border:none;color:var(--text4);font-size:12px;font-weight:500;padding:7px 14px;border-radius:var(--r-sm);display:flex;align-items:center;gap:6px;cursor:pointer;transition:all .15s}
+.add-btn:hover{color:var(--teal);background:var(--teal3)}
+.add-col-btn{background:none;border:1px dashed #b8860b;color:#f5a623;font-size:13px;padding:3px 6px;border-radius:var(--r-sm);cursor:pointer;display:flex;align-items:center;transition:all .15s;white-space:nowrap}
+.add-col-btn:hover{border-color:#f5a623;color:#fff;background:#f5a623}
+.custom-col-th{position:relative;min-width:100px}
+.custom-col-th input{background:none;border:none;outline:none;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:var(--text4);width:calc(100% - 18px);font-family:var(--font);cursor:pointer;padding:0}
+.custom-col-th input:focus{color:var(--teal)}
+.del-col-btn{background:none;border:none;color:var(--text4);font-size:11px;cursor:pointer;padding:0;position:absolute;right:4px;top:50%;transform:translateY(-50%);opacity:0;transition:opacity .15s}
+.custom-col-th:hover .del-col-btn{opacity:1}
+.del-col-btn:hover{color:var(--live)}
+
+/* CMD BAR */
+.cmd-bar{position:fixed;bottom:0;left:0;right:0;background:var(--navy);color:#fff;height:52px;display:none;align-items:center;padding:0 24px;gap:16px;z-index:150;box-shadow:0 -4px 12px rgba(0,0,0,.15)}
+.cmd-bar.visible{display:flex}
+.cmd-label{font-size:11px;font-weight:500;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+.cmd-name{font-size:14px;font-weight:600;color:#fff;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cmd-sep{width:1px;height:24px;background:rgba(255,255,255,.15)}
+.cmd-btn{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:12px;font-weight:500;padding:6px 14px;border-radius:var(--r-sm);cursor:pointer;display:flex;align-items:center;gap:5px;transition:background .15s;white-space:nowrap}
+.cmd-btn:hover{background:rgba(255,255,255,.18)}
+.cmd-btn.go{background:var(--teal);border-color:transparent}
+.cmd-btn.go:hover{opacity:.9}
+.cmd-timer{font-size:20px;font-weight:700;color:#34d399;letter-spacing:.02em;min-width:72px;text-align:right}
+.cmd-timer.red{color:#f87171}
+.cmd-timer.yellow{color:#fbbf24}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
+.modal-bg.on{display:flex}
+.modal{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:28px 30px;width:500px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 40px rgba(0,0,0,.15)}
+.modal h2{font-size:18px;font-weight:700;letter-spacing:-.01em;margin-bottom:4px}
+.modal-sub{font-size:12px;color:var(--text3);margin-bottom:20px}
+.map-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.map-lbl{font-size:12px;font-weight:500;color:var(--text2);width:130px;flex-shrink:0}
+.map-sel{flex:1;font-size:12px;padding:7px 9px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg2);color:var(--text);outline:none}
+.map-sel:focus{border-color:var(--teal)}
+.modal-btns{display:flex;gap:8px;margin-top:20px}
+.btn-mp{background:var(--navy);color:#fff;border:none;font-size:13px;font-weight:600;padding:9px 22px;border-radius:var(--r-sm);cursor:pointer;transition:opacity .15s}
+.btn-mp:hover{opacity:.85}
+.btn-mc{background:var(--bg2);color:var(--text2);border:1px solid var(--border);font-size:13px;padding:9px 16px;border-radius:var(--r-sm);cursor:pointer}
+.btn-mc:hover{background:var(--bg3)}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="logo">
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+      <rect width="28" height="28" rx="7" fill="#142850"/>
+      <rect x="7" y="6" width="2.5" height="16" rx="1.25" fill="#2dd4bf"/>
+      <path d="M12 10.5L21 14L12 17.5Z" fill="#2dd4bf"/>
+      <circle cx="8.25" cy="5" r="1.5" fill="#2dd4bf" opacity=".5"/>
+    </svg>
+    <span class="logo-text">Cue<span>.</span></span>
+  </div>
+  <span class="topbar-event" id="topbarEvent" onclick="editTitle()">—</span>
+  <div class="topbar-right">
+    <div class="countdown-chip" id="cdChip" style="display:none">
+      <div class="cdot" id="cdDot"></div>
+      <span id="cdLabel">—</span>
+      <span id="cdTimer" style="font-weight:700;letter-spacing:.02em;margin-left:4px"></span>
+    </div>
+    <button class="btn-icon" onclick="toggleDark()" title="Dark mode"><i class="ti ti-moon"></i></button>
+    <button class="btn-sm" id="btnBack" style="display:none" onclick="goUpload()"><i class="ti ti-arrow-left"></i> Back</button>
+    <button class="btn-sm" onclick="goUpload()"><i class="ti ti-upload"></i> Import</button>
+    <button class="btn-sm" id="btnExport" style="display:none" onclick="exportTxt()"><i class="ti ti-download"></i> Export</button>
+    <button class="btn-teal" id="btnShare" style="display:none" onclick="copyLink()"><i class="ti ti-share"></i> Share</button>
+  </div>
+</header>
+
+<!-- UPLOAD PAGE -->
+<div id="uploadPage" style="display:flex;flex-direction:row;min-height:calc(100vh - 56px)">
+
+  <!-- Sidebar: saved projects -->
+  <aside class="up-sidebar">
+    <div class="up-sidebar-header">
+      <div class="up-sidebar-title">Your events</div>
+      <button class="up-sidebar-new" onclick="startBlank()"><i class="ti ti-plus"></i> New blank event</button>
+    </div>
+    <div class="up-projects" id="upProjects"></div>
+  </aside>
+
+  <!-- Main: import zone -->
+  <div class="up-main">
+    <div class="upload-hero">
+      <h1>Your show,<br/><em>perfectly called.</em></h1>
+      <p>Import your run-of-show from Excel. Edit any field and times cascade automatically. Share a live link with your production crew.</p>
+    </div>
+    <input type="file" id="fileInp" accept=".xlsx,.xls,.csv" style="display:none"/>
+    <div class="drop-card" id="dropZone">
+      <div class="drop-icon"><i class="ti ti-table-import"></i></div>
+      <h3>Import run-of-show</h3>
+      <p>Drop your Excel file here or click to browse.<br/>Your columns will be mapped automatically.</p>
+      <span class="fmt">.xlsx &nbsp;·&nbsp; .xls &nbsp;·&nbsp; .csv</span>
+    </div>
+    <div class="or-row"><div class="or-line"></div><span class="or-txt">or</span><div class="or-line"></div></div>
+    <button class="btn-blank" onclick="startBlank()"><i class="ti ti-plus" style="font-size:14px"></i> Start with a blank run-of-show</button>
+  </div>
+</div>
+
+<!-- EDITOR PAGE -->
+<div id="editorPage" style="display:none">
+  <div class="kpi-bar" id="kpiBar"></div>
+  <div class="info-bar">
+    <div class="share-box">
+      <i class="ti ti-link" style="color:var(--text4);font-size:13px;flex-shrink:0"></i>
+      <span class="share-txt" id="shareUrl">—</span>
+      <button class="copy-btn" onclick="copyLink()"><i class="ti ti-copy"></i></button>
+    </div>
+    <span class="flash" id="copyFlash">Copied!</span>
+    <span style="font-size:12px;color:var(--text3)">You are:</span>
+    <input class="who-inp" id="whoInp" value="Show Caller" placeholder="Your name…"/>
+    <div class="pdots" id="pdots"></div>
+    <span id="pdotLbl" style="font-size:11px;color:var(--text3)"></span>
+    <span class="sync-pill" id="syncPill">Saved</span>
+  </div>
+  <div class="ros-wrap">
+    <table class="ros">
+      <thead><tr id="theadRow">
+        <th style="width:22px"></th>
+        <th style="width:82px">Status</th>
+        <th style="width:52px">Cue</th>
+        <th style="width:80px">Time</th>
+        <th style="width:100px">Duration</th>
+        <th>What Happens</th>
+        <th style="width:140px">Screens</th>
+        <th style="width:110px">Audio</th>
+        <th style="width:100px">Mics</th>
+        <th style="width:130px">Notes</th>
+        <th id="customColHeaders"></th>
+        <th style="width:32px;padding:0 4px"><button class="add-col-btn" onclick="promptAddColumn()" title="Add column"><i class="ti ti-column-insert-right"></i></button></th>
+        <th style="width:32px"></th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div class="add-bar">
+      <button class="add-btn" onclick="addRow()"><i class="ti ti-plus"></i> Add cue</button>
+      <button class="add-btn" onclick="addSection()"><i class="ti ti-separator"></i> Add section</button>
+    </div>
+  </div>
+</div>
+
+<!-- CMD BAR -->
+<div class="cmd-bar" id="cmdBar">
+  <span class="cmd-label">Live</span>
+  <span class="cmd-name" id="cmdName">—</span>
+  <div class="cmd-sep"></div>
+  <button class="cmd-btn" onclick="markPrev()"><i class="ti ti-chevron-left"></i> Prev</button>
+  <button class="cmd-btn go" onclick="advance()">Next cue <i class="ti ti-chevron-right"></i></button>
+  <div class="cmd-sep"></div>
+  <span class="cmd-timer" id="cmdTimer"></span>
+</div>
+
+<!-- SHARE MODAL -->
+<div class="modal-bg" id="shareModal">
+  <div class="modal" style="max-width:480px">
+    <h2>Share this run-of-show</h2>
+    <div class="modal-sub">Anyone with this link can view and edit this event in real time.</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input id="shareLinkInput" readonly style="flex:1;font-size:12px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg2);color:var(--text);outline:none;font-family:var(--font)"/>
+      <button id="shareCopyBtn" class="btn-teal" onclick="copyShareLink()">Copy link</button>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-mc" onclick="closeShareModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAP MODAL -->
+<div class="modal-bg" id="mapModal">
+  <div class="modal">
+    <h2>Map your columns</h2>
+    <div class="modal-sub" id="mapSub"></div>
+    <div id="mapFields"></div>
+    <div class="modal-btns">
+      <button class="btn-mp" onclick="buildFromMap()">Import run-of-show</button>
+      <button class="btn-mc" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──
+let rows = [];
+let customCols = []; // [{id, label}]
+let rosId = '';
+let myName = 'Show Caller';
+let lastJson = '';
+let saveTimer = null;
+let tickTimer = null;
+let dragSrc = null;
+let rawHeaders = [], rawRows = [];
+let evTitle = 'Event';
+
+// ── UTILS ──
+function pad(n){ return String(n).padStart(2,'0') }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,5) }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;') }
+
+function to12(t){
+  if(!t) return '';
+  const s = String(t).trim();
+  // already 12hr
+  if(/\d{1,2}:\d{2}\s*(AM|PM)$/i.test(s)) return s;
+  // HH:MM or HH:MM:SS
+  const m = s.match(/^(\d{1,2}):(\d{2})/);
+  if(!m) return s;
+  let h=parseInt(m[1]), mn=m[2];
+  const ap=h>=12?'PM':'AM';
+  if(h>12)h-=12; if(h===0)h=12;
+  return `${h}:${mn} ${ap}`;
+}
+
+function toMins(t){
+  if(!t) return null;
+  const s = String(t).trim();
+  const m12 = s.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if(m12){ let h=+m12[1],mn=+m12[2]; if(/PM/i.test(m12[3])&&h<12)h+=12; if(/AM/i.test(m12[3])&&h===12)h=0; return h*60+mn; }
+  const m24 = s.match(/^(\d{1,2}):(\d{2})/);
+  if(m24) return +m24[1]*60+ +m24[2];
+  return null;
+}
+function fromMins(m){ return to12(pad(Math.floor(Math.max(0,m)/60)%24)+':'+pad(Math.max(0,m)%60)) }
+
+function parseDur(v){
+  if(!v) return null;
+  const s=String(v).trim();
+  const mm=s.match(/(\d+\.?\d*)\s*min/i); if(mm)return Math.round(+mm[1]);
+  const hh=s.match(/(\d+\.?\d*)\s*h/i);   if(hh)return Math.round(+hh[1]*60);
+  const n=parseFloat(s); if(!isNaN(n)&&n>0&&n<=600)return Math.round(n);
+  return null;
+}
+
+function xlTime(v){
+  if(v===null||v===undefined||v==='') return '';
+  const s=String(v).trim();
+  const m12=s.match(/^(\d{1,2}):(\d{2})\s*(am|pm)$/i);
+  if(m12){ let h=+m12[1],mn=m12[2]; if(/pm/i.test(m12[3])&&h<12)h+=12; if(/am/i.test(m12[3])&&h===12)h=0; return to12(pad(h)+':'+mn); }
+  const m24=s.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if(m24) return to12(pad(+m24[1])+':'+m24[2]);
+  const n=parseFloat(s);
+  if(!isNaN(n)&&n>=0&&n<1){ const tm=Math.round(n*1440); return to12(pad(Math.floor(tm/60))+':'+pad(tm%60)); }
+  return s;
+}
+
+// ── STORAGE ──
+// ── FIREBASE CONFIG ──
+const FB = 'https://cue-app-33450-default-rtdb.firebaseio.com';
+const myId = 'u_' + Math.random().toString(36).slice(2,8);
+
+async function fbGet(p){ try{ const r=await fetch(p+'.json'); return r.ok?r.json():null; }catch{ return null; } }
+async function fbPut(p,d){ try{ await fetch(p+'.json',{method:'PUT',body:JSON.stringify(d),headers:{'Content-Type':'application/json'}}); }catch{} }
+async function fbDelete(p){ try{ await fetch(p+'.json',{method:'DELETE'}); }catch{} }
+async function fbGetList(){ try{ const r=await fetch(`${FB}/cue.json?shallow=true`); return r.ok?r.json():null; }catch{ return null; } }
+function rosPath(id){ return `${FB}/cue/${id||rosId}`; }
+
+// ── SAVE / LOAD ──
+async function saveLocal(){
+  if(!rosId) return;
+  const payload={rows,customCols,title:evTitle,savedAt:Date.now(),savedBy:myName};
+  await fbPut(rosPath()+'/data', payload);
+  lastJson=JSON.stringify(rows);
+  addToIndex(rosId, evTitle, Date.now());
+  setSave('saved');
+}
+
+async function loadLocal(id){
+  return await fbGet(rosPath(id)+'/data');
+}
+
+async function listSaved(){
+  // Keep a local index in localStorage for fast sidebar rendering
+  try{
+    const index = JSON.parse(localStorage.getItem('cue_index')||'[]');
+    return index;
+  }catch{ return []; }
+}
+
+function addToIndex(id, title, savedAt){
+  try{
+    let index = JSON.parse(localStorage.getItem('cue_index')||'[]');
+    index = index.filter(x=>x.id!==id);
+    index.unshift({id, title, savedAt});
+    index = index.slice(0,30);
+    localStorage.setItem('cue_index', JSON.stringify(index));
+  }catch{}
+}
+
+function removeFromIndex(id){
+  try{
+    let index = JSON.parse(localStorage.getItem('cue_index')||'[]');
+    index = index.filter(x=>x.id!==id);
+    localStorage.setItem('cue_index', JSON.stringify(index));
+  }catch{}
+}
+
+// ── POLL for live collaboration ──
+let pollTimer = null;
+async function doPoll(){
+  if(!rosId) return;
+  try{
+    const d = await fbGet(rosPath()+'/data');
+    if(d && d.rows && d.savedBy !== myName){
+      const j = JSON.stringify(d.rows);
+      if(j !== lastJson){
+        rows=d.rows; lastJson=j;
+        if(d.title){ evTitle=d.title; document.getElementById('topbarEvent').textContent=d.title; }
+        renderTable(); updateKPI();
+      }
+    }
+  }catch{}
+}
+
+// ── PRESENCE ──
+let presTimer = null;
+async function doPresence(){
+  if(!rosId) return;
+  try{
+    await fbPut(rosPath()+'/presence/'+myId,{name:myName,ts:Date.now()});
+    const all = await fbGet(rosPath()+'/presence');
+    const now = Date.now();
+    const active = all?Object.values(all).filter(p=>now-p.ts<35000):[];
+    document.getElementById('pdots').innerHTML=active.map(p=>`<div class="pdot" title="${esc(p.name)}" style="background:${p.name===myName?'#142850':'#006D66'}"></div>`).join('');
+    document.getElementById('pdotLbl').textContent=active.length<=1?'Just you':`${active.length} editing`;
+  }catch{}
+}
+
+// ── DARK MODE ──
+function toggleDark(){
+  const now=document.documentElement.getAttribute('data-theme');
+  const next=now==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',next);
+  localStorage.setItem('cue-theme',next);
+}
+(function(){ const t=localStorage.getItem('cue-theme'); if(t) document.documentElement.setAttribute('data-theme',t); })();
+
+// ── SAVE ──
+function setSave(s){ const p=document.getElementById('syncPill'); p.textContent=s==='saving'?'Saving…':'Saved'; p.className='sync-pill'+(s==='saving'?' saving':''); }
+function save(){ setSave('saving'); clearTimeout(saveTimer); saveTimer=setTimeout(saveLocal,800); }
+
+// ── LINK ──
+function copyLink(){
+  if(!rosId) return;
+  // Save first to make sure data is in Firebase before sharing
+  saveLocal().then(()=>{
+    const url=location.origin+location.pathname+'#'+rosId;
+    document.getElementById('shareLinkInput').value=url;
+    document.getElementById('shareModal').className='modal-bg on';
+  });
+}
+function copyShareLink(){
+  const input=document.getElementById('shareLinkInput');
+  input.select(); input.setSelectionRange(0,99999);
+  navigator.clipboard.writeText(input.value).catch(()=>{ document.execCommand('copy'); });
+  document.getElementById('shareCopyBtn').textContent='Copied!';
+  setTimeout(()=>document.getElementById('shareCopyBtn').textContent='Copy link',2000);
+}
+function closeShareModal(){ document.getElementById('shareModal').className='modal-bg'; }
+function exportJSON(){
+  if(!rows.length) return;
+  const payload=JSON.stringify({rows,title:evTitle,savedAt:Date.now()},null,2);
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([payload],{type:'application/json'}));
+  a.download=(evTitle.replace(/\s+/g,'_'))||'RunOfShow' + '.json'; a.click();
+}
+
+// ── TITLE ──
+function setTitle(t){ evTitle=t||'Event'; document.getElementById('topbarEvent').textContent=evTitle; }
+function editTitle(){ const n=prompt('Event name:',evTitle); if(n&&n.trim()){ setTitle(n.trim()); save(); } }
+
+// ── NAV ──
+function goUpload(){
+  clearInterval(tickTimer); clearInterval(pollTimer); clearInterval(presTimer);
+  tickTimer=null; pollTimer=null; presTimer=null;
+  document.getElementById('uploadPage').style.display='flex';
+  document.getElementById('editorPage').style.display='none';
+  document.getElementById('cmdBar').className='cmd-bar';
+  document.getElementById('btnExport').style.display='none';
+  document.getElementById('btnShare').style.display='none';
+  document.getElementById('btnBack').style.display='none';
+  document.getElementById('cdChip').style.display='none';
+  rosId='';
+  customCols=[];
+  renderSidebar();
+}
+
+function showEditor(id, title){
+  rosId=id;
+  setTitle(title||'Run-of-Show');
+  document.getElementById('shareUrl').textContent=location.origin+location.pathname+'#'+id;
+  document.getElementById('uploadPage').style.display='none';
+  document.getElementById('editorPage').style.display='block';
+  document.getElementById('btnExport').style.display='';
+  document.getElementById('btnShare').style.display='';
+  document.getElementById('btnBack').style.display='';
+  document.getElementById('cmdBar').className='cmd-bar visible';
+  document.getElementById('cdChip').style.display='';
+  clearInterval(tickTimer); clearInterval(pollTimer); clearInterval(presTimer);
+  tickTimer=setInterval(tick,1000);
+  pollTimer=setInterval(doPoll,4000);
+  presTimer=setInterval(doPresence,15000);
+  renderCustomColHeaders();
+  tick(); doPresence();
+}
+
+function startBlank(){
+  rows=[];
+  const id=Math.random().toString(36).slice(2,10);
+  addToIndex(id,'New Run-of-Show',Date.now());
+  showEditor(id,'New Run-of-Show');
+  renderTable(); updateKPI();
+  addSection('Day 1'); addRow();
+}
+
+// ── TICK ──
+function tick(){
+  const now = new Date();
+  const live = rows.find(r=>r.type==='data'&&r.status==='live');
+  const next = rows.find(r=>r.type==='data'&&r.status==='next');
+  const chip=document.getElementById('cdChip'), dot=document.getElementById('cdDot');
+  const lbl=document.getElementById('cdLabel'), timer=document.getElementById('cdTimer');
+  const cTimer=document.getElementById('cmdTimer'), cName=document.getElementById('cmdName');
+
+  if(live){
+    cName.textContent = live.what||'—';
+    lbl.textContent = 'Live';
+    dot.className = 'cdot live';
+
+    if(liveStartedAt && live.durMins){
+      // Count down from durMins based on real elapsed time since LIVE was clicked
+      const elapsedSecs = Math.floor((Date.now() - liveStartedAt) / 1000);
+      const totalSecs = live.durMins * 60;
+      const rem = totalSecs - elapsedSecs;
+      const abs = Math.abs(rem);
+      const mm = pad(Math.floor(abs/60)), ss = pad(abs%60);
+      const str = (rem<0?'+':'') + mm + ':' + ss;
+      timer.textContent = str; cTimer.textContent = str;
+      cTimer.className = 'cmd-timer'+(rem<0?' red':rem<120?' yellow':'');
+      chip.className = 'countdown-chip'+(rem<0?' urgent':rem<120?' soon':'');
+    } else {
+      // No start time tracked or no duration — show elapsed since clicked
+      if(liveStartedAt){
+        const elapsed = Math.floor((Date.now()-liveStartedAt)/1000);
+        const mm=pad(Math.floor(elapsed/60)), ss=pad(elapsed%60);
+        timer.textContent=mm+':'+ss; cTimer.textContent=mm+':'+ss;
+      } else {
+        timer.textContent='—'; cTimer.textContent='—';
+      }
+      chip.className='countdown-chip';
+      cTimer.className='cmd-timer';
+    }
+  } else if(next&&next.time){
+    const nowSecs = now.getHours()*3600+now.getMinutes()*60+now.getSeconds();
+    const startMins = toMins(next.time);
+    if(startMins !== null){
+      const rem = startMins*60 - nowSecs;
+      const abs = Math.abs(rem);
+      lbl.textContent='Next in'; timer.textContent=pad(Math.floor(abs/60))+':'+pad(abs%60);
+      chip.className='countdown-chip'+(rem<300?' soon':'');
+    } else {
+      lbl.textContent='Next'; timer.textContent='—'; chip.className='countdown-chip';
+    }
+    cTimer.textContent=''; dot.className='cdot';
+    cName.textContent=next.what||'—';
+  } else {
+    lbl.textContent='Standby'; timer.textContent=''; cTimer.textContent='';
+    dot.className='cdot'; chip.className='countdown-chip'; cName.textContent='—';
+  }
+}
+
+// ── STATUS ──
+// Track when a cue went live
+let liveStartedAt = null;
+
+function cycleStatus(i){
+  const r=rows[i]; if(!r||r.type!=='data') return;
+  const states=['','live','next','done'];
+  const newStatus = states[(states.indexOf(r.status||'')+1)%states.length];
+  r.status = newStatus;
+  if(newStatus === 'live') liveStartedAt = Date.now();
+  else if(newStatus !== 'live') { const anyLive=rows.find(x=>x.type==='data'&&x.status==='live'); if(!anyLive)liveStartedAt=null; }
+  renderTable(); updateKPI(); save(); tick();
+}
+function advance(){
+  const li=rows.findIndex(r=>r.type==='data'&&r.status==='live');
+  if(li>=0) rows[li].status='done';
+  const ni=rows.findIndex(r=>r.type==='data'&&r.status==='next');
+  if(ni>=0){
+    rows[ni].status='live'; liveStartedAt=Date.now();
+    const af=rows.slice(ni+1).findIndex(r=>r.type==='data'&&(!r.status||r.status===''));
+    if(af>=0) rows[ni+1+af].status='next';
+  } else {
+    const fi=rows.findIndex(r=>r.type==='data'&&(!r.status||r.status===''));
+    if(fi>=0){
+      rows[fi].status='live'; liveStartedAt=Date.now();
+      const nx=rows.slice(fi+1).findIndex(r=>r.type==='data'&&(!r.status||r.status===''));
+      if(nx>=0) rows[fi+1+nx].status='next';
+    }
+  }
+  renderTable(); updateKPI(); save(); tick();
+}
+function markPrev(){
+  const li=rows.findIndex(r=>r.type==='data'&&r.status==='live');
+  if(li>=0){
+    rows[li].status='';
+    for(let i=li-1;i>=0;i--){ if(rows[i].type==='data'&&rows[i].status==='done'){ rows[i].status='live'; break; } }
+    renderTable(); updateKPI(); save(); tick();
+  }
+}
+
+// ── KPI ──
+function updateKPI(){
+  const data=rows.filter(r=>r.type==='data');
+  const totalMins=data.reduce((s,r)=>s+(r.durMins||0),0);
+  const h=Math.floor(totalMins/60), m=totalMins%60;
+  const timed=data.filter(r=>r.time);
+  const first=timed.length?timed[0].time:'—';
+  const last=timed.length?timed[timed.length-1]:null;
+  const end=last?fromMins(toMins(last.time)+(last.durMins||0)):'—';
+  const done=data.filter(r=>r.status==='done').length;
+  const live=data.find(r=>r.status==='live');
+  document.getElementById('kpiBar').innerHTML=`
+    <div class="kpi-card${live?' kpi-live':''}">
+      <div class="kpi-label">${live?'🔴 Now Live':'Status'}</div>
+      <div class="kpi-value">${live?esc(live.what||'—'):'Standby'}</div>
+    </div>
+    <div class="kpi-card"><div class="kpi-label">Total Cues</div><div class="kpi-value">${data.length}</div><div class="kpi-sub">${done} complete</div></div>
+    <div class="kpi-card"><div class="kpi-label">Run Time</div><div class="kpi-value">${totalMins?h+'h '+m+'m':'—'}</div></div>
+    <div class="kpi-card"><div class="kpi-label">Start → End</div><div class="kpi-value" style="font-size:14px">${first}</div><div class="kpi-sub">ends ${end}</div></div>`;
+}
+
+// ── RENDER ──
+// ── CUSTOM COLUMNS ──
+function promptAddColumn(){
+  const label = prompt('Column name:','');
+  if(!label || !label.trim()) return;
+  const id = 'custom_' + uid();
+  customCols.push({id, label: label.trim()});
+  renderCustomColHeaders();
+  renderTable();
+  save();
+}
+
+function renderCustomColHeaders(){
+  const container = document.getElementById('customColHeaders');
+  if(!container) return;
+  container.innerHTML = '';
+  container.colSpan = customCols.length || 0;
+  customCols.forEach((col, ci)=>{
+    const th = document.createElement('th');
+    th.className = 'custom-col-th';
+    th.style.minWidth = '120px';
+    th.innerHTML = `<input value="${esc(col.label)}" title="Click to rename" data-ci="${ci}"/><button class="del-col-btn" onclick="deleteColumn(${ci})" title="Remove column"><i class="ti ti-x"></i></button>`;
+    th.querySelector('input').addEventListener('change', e=>{
+      customCols[ci].label = e.target.value.trim()||customCols[ci].label;
+      save();
+    });
+    container.parentElement.insertBefore(th, container);
+  });
+  container.style.display = 'none';
+}
+
+function deleteColumn(ci){
+  if(!confirm('Remove this column and all its data?')) return;
+  const id = customCols[ci].id;
+  customCols.splice(ci, 1);
+  rows.forEach(r=>{ if(r.type==='data') delete r[id]; });
+  renderCustomColHeaders();
+  renderTable();
+  save();
+}
+
+async function renderSidebar(){
+  const container = document.getElementById('upProjects');
+  if(!container) return;
+  const saved = await listSaved();
+  if(!saved.length){
+    container.innerHTML = '<div class="up-empty"><i class="ti ti-calendar-off"></i>No saved events yet.<br/>Import or create one to get started.</div>';
+    return;
+  }
+  function ago(ts){ const d=Date.now()-ts; if(d<60000)return'just now'; if(d<3600000)return Math.floor(d/60000)+'m ago'; if(d<86400000)return Math.floor(d/3600000)+'h ago'; return Math.floor(d/86400000)+'d ago'; }
+  container.innerHTML = saved.sort((a,b)=>b.savedAt-a.savedAt).map(s=>`
+    <div class="up-project-item" onclick="openSaved('${s.id}')">
+      <div class="up-project-icon"><i class="ti ti-timeline"></i></div>
+      <div class="up-project-info">
+        <div class="up-project-name">${esc(s.title||'Untitled')}</div>
+        <div class="up-project-meta">Updated ${ago(s.savedAt)}</div>
+      </div>
+      <button class="up-project-del" onclick="deleteSaved(event,'${s.id}')" title="Delete"><i class="ti ti-trash"></i></button>
+    </div>`).join('');
+}
+
+async function openSaved(id){
+  const d = await loadLocal(id);
+  if(!d||!d.rows){ alert('Could not load this event.'); return; }
+  rows = d.rows;
+  customCols = d.customCols || [];
+  lastJson = JSON.stringify(rows);
+  showEditor(id, d.title||'Run-of-Show');
+  renderCustomColHeaders();
+  renderTable();
+  updateKPI();
+}
+
+async function deleteSaved(e, id){
+  e.stopPropagation();
+  if(!confirm('Delete this event? This cannot be undone.')) return;
+  await fbDelete(`${FB}/cue/${id}`);
+  removeFromIndex(id);
+  renderSidebar();
+}
+
+function renderTable(){
+  const tbody=document.getElementById('tbody');
+  if(!tbody){ console.error('tbody not found!'); return; }
+  tbody.innerHTML='';
+  if(!rows.length){ tbody.innerHTML='<tr><td colspan="11" style="text-align:center;padding:40px;color:var(--text4);font-size:13px">No cues yet. Add one below.</td></tr>'; return; }
+  rows.forEach((row,i)=>{
+    const tr=document.createElement('tr');
+    if(row.type==='section'){
+      tr.className='sec-row';
+      tr.innerHTML=`<td style="width:22px;background:var(--navy)"></td><td colspan="${9 + customCols.length}" style="padding:0;background:var(--navy)"><input class="sec-inp" value="${esc(row.label||'')}" placeholder="Section header…" data-i="${i}" data-f="label"/></td><td style="background:var(--navy);text-align:center;padding:0 4px"><button class="sec-del" onclick="delRow(${i})"><i class="ti ti-trash"></i></button></td>`;
+    } else {
+      const s=row.status||'';
+      tr.className='data-row'+(s==='live'?' is-live':s==='next'?' is-next':s==='done'?' is-done':'');
+      tr.draggable=true;
+      tr.addEventListener('dragstart',()=>{ dragSrc=i; setTimeout(()=>tr.style.opacity='.35',0); });
+      tr.addEventListener('dragend',()=>{ tr.style.opacity='1'; tbody.querySelectorAll('tr').forEach(r=>r.classList.remove('drag-over')); });
+      tr.addEventListener('dragover',e=>{ e.preventDefault(); tr.classList.add('drag-over'); });
+      tr.addEventListener('dragleave',()=>tr.classList.remove('drag-over'));
+      tr.addEventListener('drop',e=>{ e.preventDefault(); tr.classList.remove('drag-over'); if(dragSrc===null||dragSrc===i)return; const mv=rows.splice(dragSrc,1)[0]; rows.splice(i,0,mv); dragSrc=null; renderTable(); updateKPI(); save(); });
+      const chipCls=s==='live'?'chip chip-live':s==='next'?'chip chip-next':s==='done'?'chip chip-done':'chip chip-none';
+      const chipLbl=s==='live'?'LIVE':s==='next'?'NEXT':s==='done'?'DONE':'—';
+      const customCells = customCols.map(col=>
+        `<td><input class="ci" value="${esc(row[col.id]||'')}" placeholder="${esc(col.label)}…" data-i="${i}" data-f="${col.id}"/></td>`
+      ).join('');
+      tr.innerHTML=`
+        <td class="grip-td"><i class="ti ti-grip-vertical"></i></td>
+        <td class="status-td"><button class="${chipCls}" onclick="cycleStatus(${i})"><span class="chip-dot"></span>${chipLbl}</button></td>
+        <td><input class="ci ci-cue" value="${esc(row.cue||'')}" placeholder="—" data-i="${i}" data-f="cue"/></td>
+        <td><input class="ci ci-time" value="${esc(row.time||'')}" placeholder="—" data-i="${i}" data-f="time"/></td>
+        <td><input class="ci ci-dur" value="${esc(row.dur||'')}" placeholder="—" data-i="${i}" data-f="dur"/></td>
+        <td><input class="ci ci-what" value="${esc(row.what||'')}" placeholder="What happens…" data-i="${i}" data-f="what"/></td>
+        <td><input class="ci" value="${esc(row.screens||'')}" placeholder="Screens…" data-i="${i}" data-f="screens"/></td>
+        <td><input class="ci" value="${esc(row.audio||'')}" placeholder="Audio…" data-i="${i}" data-f="audio"/></td>
+        <td><input class="ci" value="${esc(row.mics||'')}" placeholder="Mics…" data-i="${i}" data-f="mics"/></td>
+        <td><input class="ci" value="${esc(row.notes||'')}" placeholder="Notes…" data-i="${i}" data-f="notes"/></td>
+        ${customCells}
+        <td class="del-td"><button class="del-btn" onclick="delRow(${i})"><i class="ti ti-trash"></i></button></td>`;
+    }
+    tbody.appendChild(tr);
+  });
+  // wire inputs
+  tbody.querySelectorAll('input[data-f]').forEach(inp=>{
+    inp.addEventListener('change',e=>{
+      const i=parseInt(e.target.dataset.i), f=e.target.dataset.f, r=rows[i];
+      if(!r) return;
+      if(f==='time'){
+        const oldMins = toMins(r.time);
+        const newRaw = e.target.value.trim();
+        if(newRaw===''){
+          r.time='';
+        } else {
+          r.time=xlTime(newRaw);
+          e.target.value=r.time;
+          const newMins = toMins(r.time);
+          if(oldMins!==null && newMins!==null){
+            const offset = newMins - oldMins;
+            // shift all rows below by the same offset
+            for(let j=i+1;j<rows.length;j++){
+              const rj=rows[j]; if(rj.type!=='data') continue;
+              const t=toMins(rj.time);
+              if(t!==null) rj.time=fromMins(t+offset);
+            }
+          } else if(oldMins===null && newMins!==null){
+            // row had no time before — just cascade forward from here
+            cascade(i);
+          }
+        }
+        refreshTimes();
+      } else {
+        r[f]=e.target.value;
+        if(f==='dur'){ r.durMins=parseDur(e.target.value); cascade(i); refreshTimes(); }
+      }
+      updateKPI(); save();
+    });
+  });
+}
+
+function cascade(from){
+  // Used when a row gains a time for the first time or duration changes.
+  // Fills in times for rows below that have no time yet.
+  let cur=null;
+  for(let i=0;i<=from;i++){
+    const r=rows[i]; if(r.type!=='data') continue;
+    const t=toMins(r.time); if(t!==null) cur=t+(r.durMins||0);
+  }
+  if(cur===null) return;
+  for(let i=from+1;i<rows.length;i++){
+    const r=rows[i]; if(r.type!=='data') continue;
+    if(!r.time){ r.time=fromMins(cur); }
+    const t=toMins(r.time); if(t!==null) cur=t+(r.durMins||0);
+  }
+}
+
+function refreshTimes(){
+  document.querySelectorAll('input[data-f="time"]').forEach(inp=>{
+    const r=rows[parseInt(inp.dataset.i)]; if(r&&r.time&&inp.value!==r.time)inp.value=r.time;
+  });
+  updateKPI();
+}
+
+function addRow(){
+  const data=rows.filter(r=>r.type==='data'); const last=data[data.length-1];
+  let t=''; if(last&&last.time&&last.durMins)t=fromMins(toMins(last.time)+last.durMins);
+  rows.push({type:'data',id:uid(),cue:String(data.length+1),time:t,dur:'',durMins:null,what:'',screens:'',audio:'',mics:'',notes:'',status:''});
+  renderTable(); updateKPI(); save();
+  setTimeout(()=>{ const els=document.querySelectorAll('input[data-f="what"]'); if(els.length)els[els.length-1].focus(); },40);
+}
+function addSection(lbl){
+  rows.push({type:'section',id:uid(),label:lbl||''});
+  renderTable(); save();
+  if(!lbl)setTimeout(()=>{ const els=document.querySelectorAll('input.sec-inp'); if(els.length)els[els.length-1].focus(); },40);
+}
+function delRow(i){ rows.splice(i,1); renderTable(); updateKPI(); save(); }
+
+// ── FILE UPLOAD ──
+const dz=document.getElementById('dropZone'), fi=document.getElementById('fileInp');
+dz.addEventListener('click',()=>{ fi.value=''; fi.click(); });
+dz.addEventListener('dragover',e=>{ e.preventDefault(); dz.classList.add('over'); });
+dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
+dz.addEventListener('drop',e=>{ e.preventDefault(); dz.classList.remove('over'); const f=e.dataTransfer.files[0]; if(f)readFile(f); });
+fi.addEventListener('change',e=>{ if(e.target.files[0])readFile(e.target.files[0]); });
+
+function readFile(file){
+  const reader=new FileReader();
+  reader.onerror=()=>alert('Could not read file.');
+  reader.onload=e=>{
+    try{
+      const wb=file.name.toLowerCase().endsWith('.csv')
+        ?XLSX.read(e.target.result,{type:'string'})
+        :XLSX.read(new Uint8Array(e.target.result),{type:'array',cellDates:true,cellNF:true});
+      const sheet=wb.Sheets[wb.SheetNames[0]];
+      const all=XLSX.utils.sheet_to_json(sheet,{header:1,defval:'',raw:false});
+      if(!all||all.length<2){ alert('Spreadsheet appears empty.'); return; }
+      let hi=-1;
+      for(let i=0;i<Math.min(all.length,20);i++){
+        const j=all[i].map(c=>String(c||'').toUpperCase()).join('|');
+        if(j.includes('TIME')||j.includes('CUE')||j.includes('WHAT')||j.includes('SCREEN')){ hi=i; break; }
+      }
+      if(hi===-1) for(let i=0;i<all.length;i++){ if(all[i].some(c=>c!=='')){ hi=i; break; } }
+      rawHeaders=all[hi].map(h=>String(h||'').trim());
+      rawRows=all.slice(hi+1).filter(r=>r.some(c=>c!==''&&c!==null));
+      if(!rawHeaders.filter(h=>h).length){ alert('Could not find column headers.'); return; }
+      openMapModal(file.name);
+    }catch(err){ alert('Error: '+err.message); console.error(err); }
+  };
+  if(file.name.toLowerCase().endsWith('.csv'))reader.readAsText(file);
+  else reader.readAsArrayBuffer(file);
+}
+
+function openMapModal(filename){
+  document.getElementById('mapSub').textContent=filename+' · '+rawRows.length+' rows detected';
+  const hdrs=rawHeaders.filter(h=>h), low=hdrs.map(h=>h.toLowerCase());
+  const guess=k=>{ const maps={cue:['cue','#'],time:['time','start'],dur:['dur','duration','length','min'],what:['what','name','title','session','agenda','description','happens'],screens:['screen','gfx','graphic','display','visual','slide'],audio:['audio','sound'],mics:['mic','microphone','lav'],notes:['note','notes','comment']}; for(const kw of(maps[k]||[])){ const i=low.findIndex(h=>h.includes(kw)); if(i>=0)return hdrs[i]; } return'__none__'; };
+  const fields=[{k:'cue',l:'CUE'},{k:'time',l:'TIME'},{k:'dur',l:'DURATION'},{k:'what',l:'WHAT HAPPENS ✱'},{k:'screens',l:'SCREENS'},{k:'audio',l:'AUDIO'},{k:'mics',l:'MICS'},{k:'notes',l:'NOTES'}];
+  document.getElementById('mapFields').innerHTML=fields.map(f=>`<div class="map-row"><span class="map-lbl">${f.l}</span><select class="map-sel" id="col_${f.k}"><option value="__none__">— skip —</option>${hdrs.map(h=>`<option value="${h}"${guess(f.k)===h?' selected':''}>${h}</option>`).join('')}</select></div>`).join('');
+  document.getElementById('mapModal').className='modal-bg on';
+}
+function closeModal(){ document.getElementById('mapModal').className='modal-bg'; }
+
+function buildFromMap(){
+  const getV=k=>document.getElementById('col_'+k)?.value||'__none__';
+  const getIdx=k=>{ const v=getV(k); return v==='__none__'?-1:rawHeaders.indexOf(v); };
+  const cell=(row,k)=>{ const i=getIdx(k); return i>=0?String(row[i]||'').trim():''; };
+  const cueI=getIdx('cue'), timeI=getIdx('time');
+  const built=[]; let ctr=1;
+
+  rawRows.forEach(row=>{
+    const cueV = cueI>=0?String(row[cueI]||'').trim():'';
+    const timeV = timeI>=0?String(row[timeI]||'').trim():'';
+    const whatV = cell(row,'what');
+
+    // Section row detection:
+    // 1. Text in CUE col, no time (standard pattern)
+    // 2. OR: only 1-2 non-empty cells in the whole row and no time
+    const nonEmpty = row.filter(c=>c!==''&&c!==null&&c!==undefined).length;
+    const isSection = (cueV && !timeV) || (!timeV && nonEmpty <= 2 && (cueV || whatV));
+    if(isSection){
+      const label = cueV || whatV;
+      if(label) built.push({type:'section',id:uid(),label:label});
+      return;
+    }
+
+    // Skip blank rows
+    if(!whatV && !timeV) return;
+    const rawDur=cell(row,'dur');
+    const cleanTime=xlTime(timeV);
+    built.push({type:'data',id:uid(),cue:cueV||String(ctr++),time:cleanTime,dur:rawDur,durMins:parseDur(rawDur),what:whatV,screens:cell(row,'screens'),audio:cell(row,'audio'),mics:cell(row,'mics'),notes:cell(row,'notes'),status:'',timeLocked:!!cleanTime});
+  });
+
+  if(!built.length){ alert('No rows imported. Check column mapping.'); return; }
+
+  rows = built;
+  closeModal();
+  const id = Math.random().toString(36).slice(2,10);
+  addToIndex(id, 'Run-of-Show', Date.now());
+  showEditor(id, 'Run-of-Show');
+  renderTable();
+  updateKPI();
+  lastJson = JSON.stringify(rows);
+  setTimeout(saveLocal, 100);
+}
+
+// ── EXPORT ──
+function exportTxt(){
+  const W=[6,8,14,32,22,18,16,24];
+  const line=cols=>cols.map((c,i)=>String(c||'').padEnd(W[i])).join('  ');
+  let txt=evTitle.toUpperCase()+'\n'+'─'.repeat(100)+'\n\n';
+  txt+=line(['CUE','TIME','DUR','WHAT HAPPENS','SCREENS','AUDIO','MICS','NOTES'])+'\n'+'─'.repeat(145)+'\n';
+  rows.forEach(r=>{ if(r.type==='section'){txt+=`\n── ${r.label} ──\n\n`;return;} txt+=line([r.cue||'',r.time||'',r.dur||'',r.what||'',r.screens||'',r.audio||'',r.mics||'',r.notes||''])+'\n'; });
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([txt],{type:'text/plain'}));
+  a.download=evTitle.replace(/\s+/g,'_')+'_Cue.txt'; a.click();
+}
+
+document.getElementById('whoInp').addEventListener('input',e=>{ myName=e.target.value||'Show Caller'; });
+renderSidebar();
+
+// Boot: if URL has a hash, try loading that event from Firebase
+(async function boot(){
+  const hash = location.hash.replace('#','');
+  if(hash && hash.length >= 4){
+    try{
+      const d = await fbGet(`${FB}/cue/${hash}/data`);
+      if(d && d.rows && d.rows.length){
+        rows = d.rows;
+        customCols = d.customCols || [];
+        lastJson = JSON.stringify(rows);
+        addToIndex(hash, d.title||'Run-of-Show', d.savedAt||Date.now());
+        showEditor(hash, d.title||'Run-of-Show');
+        renderCustomColHeaders();
+        renderTable();
+        updateKPI();
+      }
+    }catch(e){}
+  }
+})();
+</script>
+</body>
+</html>
